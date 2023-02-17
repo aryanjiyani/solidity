@@ -18,7 +18,6 @@ contract Crowdfunding {
         uint totVoters;
         mapping(address=>bool) voters;
     }
-
     mapping(uint=>Request) public request;
     uint public numRequestes;
     
@@ -26,17 +25,23 @@ contract Crowdfunding {
         target=_target;
         deadline=block.timestamp+_deadline;
         minContribution=100 wei;
-        manager=msg.sender;}
+        manager=msg.sender;
+    }
     function getBalance() public view returns(uint) {
-        return address(this).balance;}
+        return address(this).balance;
+    }
+
     modifier checkTime() {
         require(block.timestamp<deadline, "You have missed the time");
         _;}
     modifier checkVal() {
         require(msg.value >= minContribution, "Minimum contribution is not met");
         _;}
-    modifier dedTar() {
-        require(block.timestamp>deadline && raisedAmount<target, "You can take refund");
+    modifier timeToRefund() {
+        require(block.timestamp>deadline && raisedAmount<target, "You are not able take refund");
+        _;}
+    modifier timeToPay() {
+        require(block.timestamp>deadline && raisedAmount>=target, "Funds are still coming..");
         _;}
     modifier onlyManager() {
         require(msg.sender==manager, "Only manager can call this function");
@@ -46,16 +51,13 @@ contract Crowdfunding {
         _;}
 
     function sendEth() public payable checkTime checkVal {
-        // require(block.timestamp < deadline, "deadline has passed");
-        // require(msg.value >= minContribution, "Minimum contribution is not met");
         if(contributors[msg.sender]==0) {
             totcontributors++;
         }
         contributors[msg.sender]+=msg.value;
         raisedAmount+=msg.value;
     }
-    function refund() public dedTar {
-        // require(block.timestamp>deadline && raisedAmount<target, "You can take refund");
+    function refund() public timeToRefund {
         require(contributors[msg.sender]>0);
         address payable user=payable(msg.sender);
         user.transfer(contributors[msg.sender]);
@@ -71,14 +73,15 @@ contract Crowdfunding {
         newRequest.totVoters=0;
     }
     function voteRequest(uint _requestNo) public checkCont {
-        // require(contributors[msg.sender]>0, "You are not contributor..");
         Request storage thisRequest=request[_requestNo];
         require(thisRequest.voters[msg.sender]==false,"You have already voted..");
         thisRequest.voters[msg.sender]=true;
         thisRequest.totVoters++;
     }
-    function makePay(uint _requestNo) public onlyManager checkTime {
+
+    function makePay(uint _requestNo) public onlyManager timeToPay {
         Request storage thisRequest=request[_requestNo];
+
         require(thisRequest.completed==false, "The request has been completed");
         require(thisRequest.totVoters > totcontributors/2, "Majority does not support");
         thisRequest.recipient.transfer(thisRequest.value);
