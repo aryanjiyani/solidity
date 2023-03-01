@@ -1,13 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.5.0 <0.9.0;
-
-// mapping(0 => 0xdAC17F958D2ee523a2206206994597C13D831ec7) public USDT;
-// mapping(1 => 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599) public WBTC;
-// mapping(2 => 0x4f3AfEC4E5a3F2A6a1A411DEF7D7dFe50eE057bF) public DGX;
-// mapping(3 => 0xFA1a856Cfa3409CFa145Fa4e20Eb270dF3EB21ab) public IOST;
-// mapping(4 => 0x514910771AF9Ca656af840dff83E8264EcF986CA) public LINK;
-// mapping(5 => 0xB8c77482e45F1F44dE1745F52C74426C631bDD52) public BNB;
-
 interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
     function allowance(address owner, address spender) external view returns (uint256);
@@ -20,152 +12,150 @@ contract Ecommerce {
     
     address public merchant;
     address public admin;
-    uint256 public paidBy; // 1 for buyer & 2 for merchant
-
-    mapping(uint256 => address) public token;
-    uint256 public tokenNumber;
-
+    uint256 public fees; // percentage
+    uint256 public feesPaidBy; // 1 for buyer & 2 for merchant
+    mapping(address => uint256) public token;
+    uint256 public tokenNumber=1;
+    enum Status { 
+        NotExist, 
+        Initiated, 
+        CancelbyMerchant, 
+        CancelbyBuyer
+    }
     struct Order {
         address buyer;
         uint256 price;
-        uint256 fees;
-        // uint256 merchantId;
-        uint256 currency;
-        bool status;
+        uint256 charge;
+        address currency;
+        Status status;
     }
-    mapping(uint256 => Order) public orders;
-    uint256 public orderId;
-    event FreshOrder (uint256 orderId, uint256 price, address buyer);
+    mapping(string => Order) public orders;
+    string public orderId;
+    uint256 public numOrders;
     
-    constructor(address _admin, uint256 _paidBy) {
+    event newOrder (string orderId, uint256 price, address buyer, Status status);
+    event Token (address token, uint256 tokenNumber);
+    event Claimed (string orderId, uint256 price, Status status);
+    event Canceled (string orderId, uint256 price, Status status);
+    
+    constructor(address _admin, uint256 _fees, uint256 _feesPaidBy) {
         admin = _admin;
-        paidBy = _paidBy;
+        fees = _fees;
+        feesPaidBy = _feesPaidBy;
         merchant = msg.sender;
     }
     modifier onlyMerchant() {
         require(msg.sender == merchant, "You are not merchant");
         _;
     }
+    
     function addCurrency(address _token) external onlyMerchant{
-        token[tokenNumber] = _token;
+        token[_token] = tokenNumber;
+        emit Token (_token, tokenNumber);
         tokenNumber++;
     }
-    function doApprove(uint256 _amount, uint256 _tokenNumber) external returns(bool) {
-        require(_tokenNumber < tokenNumber, "This token is not supported");
-        
-        uint256 _val = IERC20(token[_tokenNumber]).balanceOf(msg.sender);
-        require(_val >= _amount, "You have not enough balance");
-        
-        bool _success = IERC20(token[_tokenNumber]).approve(address(this), _amount);
-        return _success;
-    }
-    function getBalance(address _adreess) public view returns (uint256) {
-        return _adreess.balance;
+    function delCurrency(address _token) external onlyMerchant {
+        token[_token] = 0;
+        emit Token (_token, token[_token]);
     }
 
 // For Other TOKENs
-    function createOrderbyToken(uint256 _tokenNumber) external {
-        require(_tokenNumber < tokenNumber, "This token is not supported");
-
-        uint256 _allowedValue = IERC20(token[_tokenNumber]).allowance(msg.sender, address(this));
-        require(_allowedValue >= 0, "You have not Allowed yet");
-
-        bool _success = IERC20(token[_tokenNumber]).transferFrom(msg.sender, address(this), _allowedValue);
-        require(_success==true, "Transaction is not done yet");
-
-        Order storage newOrder = orders[orderId];
-        newOrder.buyer = msg.sender;
-        newOrder.price = _allowedValue;
-        newOrder.fees = _allowedValue/100;
-        newOrder.currency = _tokenNumber;
-        newOrder.status = false;
-        
-        emit FreshOrder(orderId, _allowedValue, msg.sender);
-        orderId++;
-    }
-// For ETH only
-    function createOrder() external payable {
-        
-        Order storage newOrder = orders[orderId];
-        newOrder.buyer = msg.sender;
-        newOrder.price = msg.value;
-        newOrder.fees = msg.value/100;
-        newOrder.currency = tokenNumber;
-        newOrder.status = false;
-
-        emit FreshOrder(orderId, msg.value, msg.sender);
-        orderId++;
-    }
-
-
-    function claim(uint256 _orderId) external onlyMerchant {
-        require(_orderId < orderId, "This Order does not exist");
+    function createOrderbyToken(address _token, uint256 _orderAmount, string memory _orderId) external {
+        require(token[_token] != 0 && orders[_orderId].price == 0, "This token or orderID is not supported");        
         Order storage thisOrder = orders[_orderId];
 
-        require (thisOrder.status==false && thisOrder.price > 0, "This order is already canceles or claimed");
-        uint256 toMerchant = thisOrder.price - thisOrder.fees;
+        (bool success, bytes memory data) = _token.call(abi.encodeWithSignature("transferFrom(address,address,uint256)", msg.sender, address(this), _orderAmount));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "ERROR : can't transfer");
 
-        if(thisOrder.currency < tokenNumber) {
-            bool toMerch = IERC20(token[tokenNumber]).transfer(merchant,toMerchant);
-            bool toAdmin = IERC20(token[tokenNumber]).transfer(admin,thisOrder.fees);
-            if(toMerch && toAdmin){
-                thisOrder.status=true;
-            }
-            else {
-                thisOrder.status=false;
-            }
-        }
-        else if(thisOrder.currency==tokenNumber) {
+        thisOrder.buyer = msg.sender;
+        thisOrder.price = _orderAmount;
+        thisOrder.charge = _orderAmount*fees/100;
+        thisOrder.currency = _token;
+        thisOrder.status = Status.Initiated;
+        numOrders++;
+        emit newOrder (_orderId, _orderAmount, msg.sender, thisOrder.status);
+    }
+// For ETH only
+    function createOrder(string memory _orderId) external payable {
+        require(orders[_orderId].price == 0, "This orderId is already taken");
+        Order storage thisOrder = orders[_orderId];
+        thisOrder.buyer = msg.sender;
+        thisOrder.price = msg.value;
+        thisOrder.charge = msg.value*fees/100;
+        thisOrder.currency = address(0);
+        thisOrder.status = Status.Initiated;
+        numOrders++;
+        emit newOrder (_orderId, msg.value, msg.sender, thisOrder.status);        
+    }
+
+    function claim(string memory _orderId) external onlyMerchant {
+        Order storage thisOrder = orders[_orderId];
+        require (thisOrder.status==Status.Initiated && thisOrder.price!=0, "This order can not be claimed");
+        
+        uint256 toMerchant = thisOrder.price - thisOrder.charge;
+        if(token[thisOrder.currency] != 0) {
+            (bool success, bytes memory data) = thisOrder.currency.call(abi.encodeWithSignature("transfer(address,uint256)", merchant, toMerchant));
+            require(success && (data.length == 0 || abi.decode(data, (bool))), "ERROR : can't transfer");
+            (bool cool, bytes memory info) = thisOrder.currency.call(abi.encodeWithSignature("transfer(address,uint256)", admin, thisOrder.charge));
+            require(cool && (info.length == 0 || abi.decode(info, (bool))), "ERROR : can't transfer");
+
+            emit Claimed (_orderId, thisOrder.price, thisOrder.status);
+        }else if(thisOrder.currency == address(0)) {
             address payable seller = payable(merchant);
             seller.transfer(toMerchant);
             address payable boss = payable(admin);
-            boss.transfer(thisOrder.fees);
-
-            thisOrder.status=true;
+            boss.transfer(thisOrder.charge);
+    
+            emit Claimed (_orderId, thisOrder.price, thisOrder.status);
+        }else {
+            revert("Invalid order");
         }
     }
     
-    function cancelOrder(uint256 _orderId) external {
-        require(_orderId < orderId, "This Order does not exist");
+    function cancelOrder(string memory _orderId) external {
+        require(orders[_orderId].price != 0 , "This Order does not exist");
         Order storage thisOrder = orders[_orderId];
-
-        require(thisOrder.status==false,"This order is already completed or claimed");
-        require(msg.sender==merchant || msg.sender==thisOrder.buyer, "You are not able to cacel order");
+        require(thisOrder.status==Status.Initiated && (msg.sender==merchant || msg.sender==thisOrder.buyer), "Order can not be canceled");
         
-        uint256 toBuyer = thisOrder.price - thisOrder.fees;
-        if(thisOrder.currency < tokenNumber) {
+        uint256 toBuyer = thisOrder.price - thisOrder.charge;
+        if(token[thisOrder.currency] != 0) {
             if(msg.sender == merchant) {
-                bool toUser = IERC20(token[tokenNumber]).transfer(thisOrder.buyer, thisOrder.price);
-                if(toUser){
-                    thisOrder.status=true;
-                }
-                else{
-                    thisOrder.status=false;
-                }
+                (bool success, bytes memory data) = thisOrder.currency.call(abi.encodeWithSignature("transfer(address,uint256)", thisOrder.buyer, thisOrder.price));
+                require(success && (data.length == 0 || abi.decode(data, (bool))), "ERROR : can't transfer");
+                thisOrder.status= Status.CancelbyMerchant;
+                numOrders--;
+                emit Canceled (_orderId, thisOrder.price, thisOrder.status);
             }
             else {
-                bool toUser = IERC20(token[tokenNumber]).transfer(thisOrder.buyer, toBuyer);
-                bool toAdmin = IERC20(token[tokenNumber]).transfer(admin,thisOrder.fees);
-                if(toUser && toAdmin){
-                    thisOrder.status=true;
-                }
-                else{
-                    thisOrder.status=false;
-                }
+                (bool success, bytes memory data) = thisOrder.currency.call(abi.encodeWithSignature("transfer(address,uint256)", thisOrder.buyer, toBuyer));
+                require(success && (data.length == 0 || abi.decode(data, (bool))), "ERROR : can't transfer");
+                (bool cool, bytes memory info) = thisOrder.currency.call(abi.encodeWithSignature("transfer(address,uint256)", admin, thisOrder.charge));
+                require(cool && (info.length == 0 || abi.decode(info, (bool))), "ERROR : can't transfer");
+                thisOrder.status= Status.CancelbyBuyer;
+                numOrders--;
+                emit Canceled (_orderId, thisOrder.price, thisOrder.status);
             }
-        }
-        else if(thisOrder.currency==tokenNumber) {
+        }else if(thisOrder.currency == address(0)) {
             address payable user = payable(thisOrder.buyer);
             if(msg.sender == merchant) {
                 user.transfer(thisOrder.price);
-                thisOrder.status=true;
+                thisOrder.status= Status.CancelbyMerchant;
+                numOrders--;
+                emit Canceled (_orderId, thisOrder.price, thisOrder.status);
             }
             else {
                 address payable boss = payable(admin);
                 user.transfer(toBuyer);
-                boss.transfer(thisOrder.fees);
-                thisOrder.status=true;
+                boss.transfer(thisOrder.charge);
+                thisOrder.status= Status.CancelbyBuyer;
+                numOrders--;
+                emit Canceled (_orderId, thisOrder.price, thisOrder.status);
             }
+        }else {
+            revert ("invalid order");
         }
+    }
+    function getBalance(address _adreess) public view returns (uint256) {
+        return _adreess.balance;
     }
 }
