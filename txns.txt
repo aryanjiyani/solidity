@@ -1,0 +1,39 @@
+USDC to WETH V2 Pair = https://etherscan.io/token/0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc
+V3 pool = https://etherscan.io/address/0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640
+
+WETH to DAI V2 Pair = https://etherscan.io/token/0xa478c2975ab1ea89e8196811f51a7b7ade33eb11
+V3 pool = https://etherscan.io/address/0xc2e9f25be6257c210d7adf0d4cd6e3e881ba25f8
+
+swapRouterV3 = https://etherscan.io/address/0xe592427a0aece92de3edee1f18e0157c05861564
+RouterV2 = https://etherscan.io/address/0x7a250d5630b4cf539739df2c5dacb4c659f2488d
+
+v2 pair swap = https://etherscan.io/tx/0x79c9d6bee381d74526ca9a663faf5f705ae01a2d88b2e25bd04c1ce43b770800
+
+Sepolia F:- https://sepolia.etherscan.io/address/0xF92ed662662998d84B3a378fD12243992778F2b7#code
+Mumbai F:- https://mumbai.polygonscan.com/address/0x4734D0FBEAA9ADa037773faEcb01309594564e55#code
+BSC Testnet F:- https://testnet.bscscan.com/address/0x64cF31671038A49140d6028E12AC44fc5602f1b1#code
+
+add liquidity = https://etherscan.io/tx/0xbe81cd10bdfd371602b199dde2722b18d0003004bc2799950ba7749df547681f
+remove liquidity = https://etherscan.io/tx/0xd233ba9c7db4bfe1f702796ca1514773989dab7118a93f813a9485d2d6f68061
+sqrtPriceLimitX96 = sqrt(0.05) * 2^96 = 7407436524495479379070983002
+
+v3 swap transaction :- https://etherscan.io/tx/0x6d72f5d0eb10d0e0d0ab7b825a453517e099ddce226bac2005d278559f725f9c
+v3 swap:- https://etherscan.io/tx/0xd182293c3081f9162c14202d1e4497060fcfc444bafef1b8518016149af67761
+seawise resolver :- 0xd1742b3c4fbb096990c8950fa635aec75b30781a
+universal router :- 0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B
+seaport :- https://etherscan.io/address/0x00000000006c3852cbef3e08e8df289169ede581#code
+MEV bot :- 0x6b75d8AF000000e20B7a7DDf000Ba900b4009A80
+
+trx 1 = https://etherscan.io/tx/0xd182293c3081f9162c14202d1e4497060fcfc444bafef1b8518016149af67761
+trx 2 = https://etherscan.io/tx/0x98c42a1083bb4d26d3042b6d36c1505f5fdc494817d644a9b695b4ad560c3745
+MEV Swap = https://etherscan.io/tx/0x17bb97569b6b31c4983ba0371db7a26e21e8b3d77963af3bded6738f5f7f9347
+Profit Maker = https://etherscan.io/address/0x3240f5819de3fcd90db9294b38b926b28ccaae50
+57 logs = https://etherscan.io/tx/0xfc2fa981ce9120a616b2fd0ed418b7bae0026f5fb4f147511373ea9da087a968
+Contract Address = 0x0B8a49d816Cc709B6Eadb09498030AE3416b66Dc
+First Bundle Mined = https://etherscan.io/block/17221041
+Lido Curve Liquidity Faring = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022
+1inch Deployer = 0xcb13e91f957DE7fb5f77A7E933fE04bc464f895d
+
+simple net profit = https://etherscan.io/tx/0x593f7edadb46139a874a1159d749a4138d507dbc91b90f7f79031ef6539b363e
+
+UBN = https://etherscan.io/token/0x9e71c5e6dba5aada861c66a55f393516210bc353
