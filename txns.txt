@@ -37,3 +37,28 @@ Lido Curve Liquidity Faring = 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022
 simple net profit = https://etherscan.io/tx/0x593f7edadb46139a874a1159d749a4138d507dbc91b90f7f79031ef6539b363e
 
 UBN = https://etherscan.io/token/0x9e71c5e6dba5aada861c66a55f393516210bc353
+
+https://defi-lab.xyz/uniswapv3simulator
+https://etherscan.io/address/0xc546d2d06144F9DD42815b8bA46Ee7B8FcAFa4a2#readContract
+https://docs.chain.link/data-feeds/examples
+
+https://docs.chain.link/data-feeds/price-feeds/addresses?network=ethereum
+
+AccessControlledOffchainAggregator = https://etherscan.io/address/0xF9Bf9ca442e15c607b2d4b6Fe01f7fa59a016554#code
+
+cumulative price in uniswap v2 pair 
+
+library UQ112x112 {
+uint224 constant Q112 = 2**112;
+
+// encode a uint112 as a UQ112x112
+function encode(uint112 y) internal pure returns (uint224 z) {
+z = uint224(y) * Q112; // never overflows
+}
+
+// divide a UQ112x112 by a uint112, returning a UQ112x112
+function uqdiv(uint224 x, uint112 y) internal pure returns (uint224 z) {
+z = x / uint224(y);
+}
+}
+UQ112x112.encode(_reserve0).uqdiv(_reserve1)
