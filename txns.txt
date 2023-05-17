@@ -62,3 +62,6 @@ z = x / uint224(y);
 }
 }
 UQ112x112.encode(_reserve0).uqdiv(_reserve1)
+
+fetch price (aggregator)
+https://github.com/smartcontractkit/libocr/tree/master/contract
