@@ -65,3 +65,6 @@ UQ112x112.encode(_reserve0).uqdiv(_reserve1)
 
 fetch price (aggregator)
 https://github.com/smartcontractkit/libocr/tree/master/contract
+
+55 AI tools
+https://precious-desk-34b.notion.site/55-AI-Tools-To-Stay-Ahead-Of-The-Game-5e34cf7b32f8471f8a885fba64e47124
