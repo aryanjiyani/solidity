@@ -68,3 +68,7 @@ https://github.com/smartcontractkit/libocr/tree/master/contract
 
 55 AI tools
 https://precious-desk-34b.notion.site/55-AI-Tools-To-Stay-Ahead-Of-The-Game-5e34cf7b32f8471f8a885fba64e47124
+
+
+SquirRL = Connected papers
+https://www.connectedpapers.com/main/c83664c3d66bf2148c71b88d7c3596f1021745ac/SquirRL%3A-Automating-Attack-Discovery-on-Blockchain-Incentive-Mechanisms-with-Deep-Reinforcement-Learning/graph
