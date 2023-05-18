@@ -72,3 +72,21 @@ https://precious-desk-34b.notion.site/55-AI-Tools-To-Stay-Ahead-Of-The-Game-5e34
 
 SquirRL = Connected papers
 https://www.connectedpapers.com/main/c83664c3d66bf2148c71b88d7c3596f1021745ac/SquirRL%3A-Automating-Attack-Discovery-on-Blockchain-Incentive-Mechanisms-with-Deep-Reinforcement-Learning/graph
+
+pair = https://etherscan.io/tokentxns?a=0xbe8bc29765e11894f803906ee1055a344fdf2511&ps=100&p=31
+router = https://etherscan.io/address/0xf164fc0ec4e93095b804a4795bbe1e041497b92a
+trx = https://etherscan.io/tx/0x08455ff84d5f87868d26600b7fd0c77e09b6662adc984ccb62f218961855a7ab
+
+function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) internal pure returns (uint amountOut) {
+uint amountInWithFee = amountIn.mul(997);
+uint numerator = amountInWithFee.mul(reserveOut);
+uint denominator = reserveIn.mul(1000).add(amountInWithFee);
+amountOut = numerator / denominator;
+}
+
+pair = address(uint(keccak256(abi.encodePacked(
+hex'ff',
+factory,
+keccak256(abi.encodePacked(token0, token1)),
+hex'96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f' // init code hash
+))));
