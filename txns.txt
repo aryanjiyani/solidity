@@ -101,3 +101,58 @@ v2 info = https://v2.info.uniswap.org/pair/0xb4e16d0168e52d35cacd2c6185b44281ec2
 V2 factory= 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f
 V2 Router= 0xf164fC0Ec4E93095b804a4795bBe1e041497b92a
 (get Amount Out)
+
+
+path finder in uniswap
+contract RouterImmutables {
+    /// @dev WETH9 address
+    IWETH9 internal immutable WETH9;
+
+    /// @dev Permit2 address
+    IAllowanceTransfer internal immutable PERMIT2;
+
+    /// @dev Seaport address
+    address internal immutable SEAPORT;
+
+    /// @dev The address of NFTX zap contract for interfacing with vaults
+    address internal immutable NFTX_ZAP;
+
+    /// @dev The address of X2Y2
+    address internal immutable X2Y2;
+
+    // @dev The address of Foundation
+    address internal immutable FOUNDATION;
+
+    // @dev The address of Sudoswap's router
+    address internal immutable SUDOSWAP;
+
+    // @dev the address of NFT20's zap contract
+    address internal immutable NFT20_ZAP;
+
+    // @dev the address of Larva Lab's cryptopunks marketplace
+    address internal immutable CRYPTOPUNKS;
+
+    /// @dev The address of LooksRare
+    address internal immutable LOOKS_RARE;
+
+    /// @dev The address of LooksRare token
+    ERC20 internal immutable LOOKS_RARE_TOKEN;
+
+    /// @dev The address of LooksRare rewards distributor
+    address internal immutable LOOKS_RARE_REWARDS_DISTRIBUTOR;
+
+    /// @dev The address of router rewards distributor
+    address internal immutable ROUTER_REWARDS_DISTRIBUTOR;
+
+    /// @dev The address of UniswapV2Factory
+    address internal immutable UNISWAP_V2_FACTORY;
+
+    /// @dev The address of UniswapV2Pair initcodehash
+    bytes32 internal immutable UNISWAP_V2_PAIR_INIT_CODE_HASH;
+
+    /// @dev The address of UniswapV3Factory
+    address internal immutable UNISWAP_V3_FACTORY;
+
+    /// @dev The address of UniswapV3Pool initcodehash
+    bytes32 internal immutable UNISWAP_V3_POOL_INIT_CODE_HASH;
+   }
