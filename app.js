@@ -4,22 +4,51 @@ ethers = require("ethers");
 // require('dotenv').config();
 // db = require('./db_config.js');
 
+Web3 = require("web3");
+Contract = require("web3-eth-contract");
+ethers = require("ethers");
+// require('dotenv').config();
+// db = require('./db_config.js');
+
 main();
 async function main() {
 
     let rpc_url = "wss://eth-mainnet.nodereal.io/ws/v1/1659dfb40aa24bbb8153a677b98064d7";
     // web3 = new Web3(rpc_url);
 
-    
     const provider = new ethers.providers.WebSocketProvider(rpc_url);
+    
     // ethers.providers.WebSocketProvider(rpc_url)
     provider.on("block", async (blockNumber) => {
-      console.log("start");
-        const block = await provider.getBlockWithTransactions();
-        for (let tx of block.transactions) {
-            console.log(tx);
-        }
+    console.log("start");
+    console.log(blockNumber);
+
+    // const block = await provider.getBlock(blockNumber);
+    console.log(await provider.getBlock(blockNumber).transactions);
+    const block = await provider.getBlockWithTransactions();
+
+    for (let tx of block.transactions) {
+      console.log(tx.to);     
+    }
     });
+}
+
+// main();
+// async function main() {
+
+//     let rpc_url = "wss://eth-mainnet.nodereal.io/ws/v1/1659dfb40aa24bbb8153a677b98064d7";
+//     // web3 = new Web3(rpc_url);
+
+    
+//     const provider = new ethers.providers.WebSocketProvider(rpc_url);
+//     // ethers.providers.WebSocketProvider(rpc_url)
+//     provider.on("block", async (blockNumber) => {
+//       console.log("start");
+//         const block = await provider.getBlockWithTransactions();
+//         for (let tx of block.transactions) {
+//             console.log(tx);
+//         }
+//     });
 
     // let contract = new web3.eth.Contract(abi, "0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B");
 
