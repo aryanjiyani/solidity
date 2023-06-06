@@ -174,3 +174,39 @@ https://blog.uniswap.org/uniswap-v3-math-primer
 https://github.com/Uniswap/smart-order-router
 
 https://github.com/Uniswap/routing-api
+
+https://atiselsts.github.io/pdfs/uniswap-v3-liquidity-math.pdf
+
+export const minimumAmountOut = (
+slippageTolerance: Percent,
+amountOut: CurrencyAmount<Currency>
+): CurrencyAmount<Currency> => {
+invariant(!slippageTolerance.lessThan(JSBI.BigInt(0)), 'SLIPPAGE_TOLERANCE')
+const slippageAdjustedAmountOut = new Fraction(JSBI.BigInt(1))
+.add(slippageTolerance)
+.invert()
+.multiply(amountOut.quotient).quotient
+return CurrencyAmount.fromRawAmount(amountOut.currency, slippageAdjustedAmountOut)
+}
+
+get 1000 pair = https://docs.uniswap.org/contracts/v2/reference/API/queries#:~:text=All pairs in Uniswap​,variable passed into your query)
+{
+pools(first: 5, orderBy: feesUSD, orderDirection: desc) {
+id
+token0{
+symbol
+}
+token0Price
+token1{
+symbol
+}
+token1Price
+}
+}
+
+subgraph sandbox = https://thegraph.com/hosted-service/subgraph/uniswap/uniswap-v2
+https://github.com/Uniswap/swap-router-contracts
+https://blog.uniswap.org/fee-returns#[math-and-data-appendix]httpsuniswaporgfeereturnsmathappendixpdf
+
+https://www.desmos.com/calculator/7wbvkts2jf ===> calculator
+https://sepolia.etherscan.io/address/0xb8533a5843aaE311F6aA3320eE267181A5954610#code
