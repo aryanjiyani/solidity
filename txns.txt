@@ -209,4 +209,12 @@ https://github.com/Uniswap/swap-router-contracts
 https://blog.uniswap.org/fee-returns#[math-and-data-appendix]httpsuniswaporgfeereturnsmathappendixpdf
 
 https://www.desmos.com/calculator/7wbvkts2jf ===> calculator
+
 https://sepolia.etherscan.io/address/0xb8533a5843aaE311F6aA3320eE267181A5954610#code
+https://etherscan.io/tx/0x9aaaaa186b775c81c7aaa2df277c20effbf5a42179780fcd5ccb3272201a5f66
+
+https://docs.balancer.fi/concepts/vault/#gas-efficient-batch-swaps
+
+https://docs.balancer.fi/reference/contracts/deployment-addresses/mainnet.html#pool-factories
+
+https://coinmarketcap.com/alexandria/glossary/brc-20
