@@ -1,0 +1,362 @@
+    https://vscode.blockscan.com/ethereum/0xd10386804959a121a8a487e49f45aa9f5a2eb2a0
+    https://vscode.blockscan.com/ethereum/0xba12222222228d8ba445958a75a0704d566bf2c8
+    
+    
+    Vault    Swaps.sol
+    
+    
+function swap(
+        SingleSwap memory singleSwap,
+        FundManagement memory funds,
+        uint256 limit,
+        uint256 deadline
+    )
+        external
+        payable
+        override
+        nonReentrant
+        whenNotPaused
+        authenticateFor(funds.sender)
+        returns (uint256 amountCalculated)
+    {
+        // The deadline is timestamp-based: it should not be relied upon for sub-minute accuracy.
+        // solhint-disable-next-line not-rely-on-time
+        _require(block.timestamp <= deadline, Errors.SWAP_DEADLINE);
+
+        // This revert reason is for consistency with `batchSwap`: an equivalent `swap` performed using that function
+        // would result in this error.
+        _require(singleSwap.amount > 0, Errors.UNKNOWN_AMOUNT_IN_FIRST_SWAP);
+
+        IERC20 tokenIn = _translateToIERC20(singleSwap.assetIn);
+        IERC20 tokenOut = _translateToIERC20(singleSwap.assetOut);
+        _require(tokenIn != tokenOut, Errors.CANNOT_SWAP_SAME_TOKEN);
+
+        // Initializing each struct field one-by-one uses less gas than setting all at once.
+        IPoolSwapStructs.SwapRequest memory poolRequest;
+        poolRequest.poolId = singleSwap.poolId;
+        poolRequest.kind = singleSwap.kind;
+        poolRequest.tokenIn = tokenIn;
+        poolRequest.tokenOut = tokenOut;
+        poolRequest.amount = singleSwap.amount;
+        poolRequest.userData = singleSwap.userData;
+        poolRequest.from = funds.sender;
+        poolRequest.to = funds.recipient;
+        // The lastChangeBlock field is left uninitialized.
+
+        uint256 amountIn;
+        uint256 amountOut;
+
+        (amountCalculated, amountIn, amountOut) = _swapWithPool(poolRequest);
+        _require(singleSwap.kind == SwapKind.GIVEN_IN ? amountOut >= limit : amountIn <= limit, Errors.SWAP_LIMIT);
+
+        _receiveAsset(singleSwap.assetIn, amountIn, funds.sender, funds.fromInternalBalance);
+        _sendAsset(singleSwap.assetOut, amountOut, funds.recipient, funds.toInternalBalance);
+
+        // If the asset in is ETH, then `amountIn` ETH was wrapped into WETH.
+        _handleRemainingEth(_isETH(singleSwap.assetIn) ? amountIn : 0);
+    }
+    
+    
+    Vault Swaps.sol
+function _swapWithPool(IPoolSwapStructs.SwapRequest memory request)
+        private
+        returns (
+            uint256 amountCalculated,
+            uint256 amountIn,
+            uint256 amountOut
+        )
+    {
+        // Get the calculated amount from the Pool and update its balances
+        address pool = _getPoolAddress(request.poolId);
+        PoolSpecialization specialization = _getPoolSpecialization(request.poolId);
+
+        if (specialization == PoolSpecialization.TWO_TOKEN) {
+            amountCalculated = _processTwoTokenPoolSwapRequest(request, IMinimalSwapInfoPool(pool));
+        } else if (specialization == PoolSpecialization.MINIMAL_SWAP_INFO) {
+            amountCalculated = _processMinimalSwapInfoPoolSwapRequest(request, IMinimalSwapInfoPool(pool));
+        } else {
+            // PoolSpecialization.GENERAL
+            amountCalculated = _processGeneralPoolSwapRequest(request, IGeneralPool(pool));
+        }
+
+        (amountIn, amountOut) = _getAmounts(request.kind, request.amount, amountCalculated);
+        emit Swap(request.poolId, request.tokenIn, request.tokenOut, amountIn, amountOut);
+    }
+    
+    
+    
+    Vault    Swaps.sol
+function _processTwoTokenPoolSwapRequest(IPoolSwapStructs.SwapRequest memory request, IMinimalSwapInfoPool pool)
+        private
+        returns (uint256 amountCalculated)
+    {
+        // For gas efficiency reasons, this function uses low-level knowledge of how Two Token Pool balances are
+        // stored internally, instead of using getters and setters for all operations.
+
+        (
+            bytes32 tokenABalance,
+            bytes32 tokenBBalance,
+            TwoTokenPoolBalances storage poolBalances
+        ) = _getTwoTokenPoolSharedBalances(request.poolId, request.tokenIn, request.tokenOut);
+
+        // We have the two Pool balances, but we don't know which one is 'token in' or 'token out'.
+        bytes32 tokenInBalance;
+        bytes32 tokenOutBalance;
+
+        // In Two Token Pools, token A has a smaller address than token B
+        if (request.tokenIn < request.tokenOut) {
+            // in is A, out is B
+            tokenInBalance = tokenABalance;
+            tokenOutBalance = tokenBBalance;
+        } else {
+            // in is B, out is A
+            tokenOutBalance = tokenABalance;
+            tokenInBalance = tokenBBalance;
+        }
+
+        // Perform the swap request and compute the new balances for 'token in' and 'token out' after the swap
+        (tokenInBalance, tokenOutBalance, amountCalculated) = _callMinimalSwapInfoPoolOnSwapHook(
+            request,
+            pool,
+            tokenInBalance,
+            tokenOutBalance
+        );
+
+        // We check the token ordering again to create the new shared cash packed struct
+        poolBalances.sharedCash = request.tokenIn < request.tokenOut
+            ? BalanceAllocation.toSharedCash(tokenInBalance, tokenOutBalance) // in is A, out is B
+            : BalanceAllocation.toSharedCash(tokenOutBalance, tokenInBalance); // in is B, out is A
+    }
+    
+    function _callMinimalSwapInfoPoolOnSwapHook(
+        IPoolSwapStructs.SwapRequest memory request,
+        IMinimalSwapInfoPool pool,
+        bytes32 tokenInBalance,
+        bytes32 tokenOutBalance
+    )
+        internal
+        returns (
+            bytes32 newTokenInBalance,
+            bytes32 newTokenOutBalance,
+            uint256 amountCalculated
+        )
+    {
+        uint256 tokenInTotal = tokenInBalance.total();
+        uint256 tokenOutTotal = tokenOutBalance.total();
+        request.lastChangeBlock = Math.max(tokenInBalance.lastChangeBlock(), tokenOutBalance.lastChangeBlock());
+
+        // Perform the swap request callback, and compute the new balances for 'token in' and 'token out' after the swap
+        amountCalculated = pool.onSwap(request, tokenInTotal, tokenOutTotal);
+        (uint256 amountIn, uint256 amountOut) = _getAmounts(request.kind, request.amount, amountCalculated);
+
+        newTokenInBalance = tokenInBalance.increaseCash(amountIn);
+        newTokenOutBalance = tokenOutBalance.decreaseCash(amountOut);
+    }
+    
+    BaseMinimalSwapInfoPool.sol    
+function onSwap(
+        SwapRequest memory request,
+        uint256 balanceTokenIn,
+        uint256 balanceTokenOut
+    ) public virtual override returns (uint256) {
+        uint256 scalingFactorTokenIn = _scalingFactor(request.tokenIn);
+        uint256 scalingFactorTokenOut = _scalingFactor(request.tokenOut);
+
+        if (request.kind == IVault.SwapKind.GIVEN_IN) {
+            // Fees are subtracted before scaling, to reduce the complexity of the rounding direction analysis.
+            request.amount = _subtractSwapFeeAmount(request.amount);
+
+            // All token amounts are upscaled.
+            balanceTokenIn = _upscale(balanceTokenIn, scalingFactorTokenIn);
+            balanceTokenOut = _upscale(balanceTokenOut, scalingFactorTokenOut);
+            request.amount = _upscale(request.amount, scalingFactorTokenIn);
+
+            uint256 amountOut = _onSwapGivenIn(request, balanceTokenIn, balanceTokenOut);
+
+            // amountOut tokens are exiting the Pool, so we round down.
+            return _downscaleDown(amountOut, scalingFactorTokenOut);
+        } else {
+            // All token amounts are upscaled.
+            balanceTokenIn = _upscale(balanceTokenIn, scalingFactorTokenIn);
+            balanceTokenOut = _upscale(balanceTokenOut, scalingFactorTokenOut);
+            request.amount = _upscale(request.amount, scalingFactorTokenOut);
+
+            uint256 amountIn = _onSwapGivenOut(request, balanceTokenIn, balanceTokenOut);
+
+            // amountIn tokens are entering the Pool, so we round up.
+            amountIn = _downscaleUp(amountIn, scalingFactorTokenIn);
+
+            // Fees are added after scaling happens, to reduce the complexity of the rounding direction analysis.
+            return _addSwapFeeAmount(amountIn);
+        }
+    }
+    
+    
+    BasePool.sol
+function _subtractSwapFeeAmount(uint256 amount) internal view returns (uint256) {
+        // This returns amount - fee amount, so we round up (favoring a higher fee amount).
+        uint256 feeAmount = amount.mulUp(getSwapFeePercentage());
+        return amount.sub(feeAmount);
+    }
+function _scalingFactor(IERC20 token) internal view virtual returns (uint256);
+function _upscale(uint256 amount, uint256 scalingFactor) internal pure returns (uint256) {
+        // Upscale rounding wouldn't necessarily always go in the same direction: in a swap for example the balance of
+        // token in should be rounded up, and that of token out rounded down. This is the only place where we round in
+        // the same direction for all amounts, as the impact of this rounding is expected to be minimal (and there's no
+        // rounding error unless `_scalingFactor()` is overriden).
+        return FixedPoint.mulDown(amount, scalingFactor);
+    }
+    
+    
+    BaseWeightedPool.sol
+function _onSwapGivenIn(
+        SwapRequest memory swapRequest,
+        uint256 currentBalanceTokenIn,
+        uint256 currentBalanceTokenOut
+    ) internal view virtual override whenNotPaused returns (uint256) {
+        // Swaps are disabled while the contract is paused.
+
+        return
+            WeightedMath._calcOutGivenIn(
+                currentBalanceTokenIn,
+                _getNormalizedWeight(swapRequest.tokenIn),
+                currentBalanceTokenOut,
+                _getNormalizedWeight(swapRequest.tokenOut),
+                swapRequest.amount
+            );
+    }
+    
+    WeightedMath.sol    
+function _calcOutGivenIn(
+        uint256 balanceIn,
+        uint256 weightIn,
+        uint256 balanceOut,
+        uint256 weightOut,
+        uint256 amountIn
+    ) internal pure returns (uint256) {
+        /**********************************************************************************************
+        // outGivenIn                                                                                //
+        // aO = amountOut                                                                            //
+        // bO = balanceOut                                                                           //
+        // bI = balanceIn              /      /            bI             \    (wI / wO) \           //
+        // aI = amountIn    aO = bO * |  1 - | --------------------------  | ^            |          //
+        // wI = weightIn               \      \       ( bI + aI )         /              /           //
+        // wO = weightOut                                                                            //
+        **********************************************************************************************/
+
+        // Amount out, so we round down overall.
+
+        // The multiplication rounds down, and the subtrahend (power) rounds up (so the base rounds up too).
+        // Because bI / (bI + aI) <= 1, the exponent rounds down.
+
+        // Cannot exceed maximum in ratio
+        _require(amountIn <= balanceIn.mulDown(_MAX_IN_RATIO), Errors.MAX_IN_RATIO);
+
+        uint256 denominator = balanceIn.add(amountIn);
+        uint256 base = balanceIn.divUp(denominator);
+        uint256 exponent = weightIn.divDown(weightOut);
+        uint256 power = base.powUp(exponent);
+
+        return balanceOut.mulDown(power.complement());
+    }
+    
+    
+    
+    (Maths)
+
+    FixedPoint
+function mulDown(uint256 a, uint256 b) internal pure returns (uint256) {
+        uint256 product = a * b;
+        _require(a == 0 || product / a == b, Errors.MUL_OVERFLOW);
+
+        return product / ONE;
+    }
+
+function divDown(uint256 a, uint256 b) internal pure returns (uint256) {
+        _require(b != 0, Errors.ZERO_DIVISION);
+
+        if (a == 0) {
+            return 0;
+        } else {
+            uint256 aInflated = a * ONE;
+            _require(aInflated / a == ONE, Errors.DIV_INTERNAL); // mul overflow
+
+            return aInflated / b;
+        }
+    }
+
+function divUp(uint256 a, uint256 b) internal pure returns (uint256) {
+        _require(b != 0, Errors.ZERO_DIVISION);
+
+        if (a == 0) {
+            return 0;
+        } else {
+            uint256 aInflated = a * ONE;
+            _require(aInflated / a == ONE, Errors.DIV_INTERNAL); // mul overflow
+
+            return ((aInflated - 1) / b) + 1;
+        }
+    }
+    
+function powUp(uint256 x, uint256 y) internal pure returns (uint256) {
+        uint256 raw = LogExpMath.pow(x, y);
+        uint256 maxError = add(mulUp(raw, MAX_POW_RELATIVE_ERROR), 1);
+
+        return add(raw, maxError);
+    }
+
+    function complement(uint256 x) internal pure returns (uint256) {
+        return (x < ONE) ? (ONE - x) : 0;
+    }
+    
+    
+    LogExpMath
+function pow(uint256 x, uint256 y) internal pure returns (uint256) {
+        if (y == 0) {
+            // We solve the 0^0 indetermination by making it equal one.
+            return uint256(ONE_18);
+        }
+
+        if (x == 0) {
+            return 0;
+        }
+
+        // Instead of computing x^y directly, we instead rely on the properties of logarithms and exponentiation to
+        // arrive at that result. In particular, exp(ln(x)) = x, and ln(x^y) = y * ln(x). This means
+        // x^y = exp(y * ln(x)).
+
+        // The ln function takes a signed value, so we need to make sure x fits in the signed 256 bit range.
+        _require(x < 2**255, Errors.X_OUT_OF_BOUNDS);
+        
+        int256 x_int256 = int256(x);
+
+        // We will compute y * ln(x) in a single step. Depending on the value of x, we can either use ln or ln_36. In
+        // both cases, we leave the division by ONE_18 (due to fixed point multiplication) to the end.
+
+        // This prevents y * ln(x) from overflowing, and at the same time guarantees y fits in the signed 256 bit range.
+        _require(y < MILD_EXPONENT_BOUND, Errors.Y_OUT_OF_BOUNDS);
+        int256 y_int256 = int256(y);
+
+        int256 logx_times_y;
+        if (LN_36_LOWER_BOUND < x_int256 && x_int256 < LN_36_UPPER_BOUND) {
+            int256 ln_36_x = _ln_36(x_int256);
+
+            // ln_36_x has 36 decimal places, so multiplying by y_int256 isn't as straightforward, since we can't just
+            // bring y_int256 to 36 decimal places, as it might overflow. Instead, we perform two 18 decimal
+            // multiplications and add the results: one with the first 18 decimals of ln_36_x, and one with the
+            // (downscaled) last 18 decimals.
+            logx_times_y = ((ln_36_x / ONE_18) * y_int256 + ((ln_36_x % ONE_18) * y_int256) / ONE_18);
+        } else {
+            logx_times_y = _ln(x_int256) * y_int256;
+        }
+        logx_times_y /= ONE_18;
+
+        // Finally, we compute exp(y * ln(x)) to arrive at x^y
+        _require(
+            MIN_NATURAL_EXPONENT <= logx_times_y && logx_times_y <= MAX_NATURAL_EXPONENT,
+            Errors.PRODUCT_OUT_OF_BOUNDS
+        );
+
+        return uint256(exp(logx_times_y));
+    }
+    
