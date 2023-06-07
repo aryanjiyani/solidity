@@ -218,3 +218,11 @@ https://docs.balancer.fi/concepts/vault/#gas-efficient-batch-swaps
 https://docs.balancer.fi/reference/contracts/deployment-addresses/mainnet.html#pool-factories
 
 https://coinmarketcap.com/alexandria/glossary/brc-20
+
+7/6/'23
+
+https://docs.balancer.fi/reference/math/weighted-math.html#spot-price
+
+Aryan Jiyani
+https://docs.balancer.fi/reference/subgraph/core/entities.html#tokenprice
+(Balancer Math)
