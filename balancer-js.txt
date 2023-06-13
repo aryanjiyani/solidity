@@ -1,0 +1,27 @@
+contracts: {
+vault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+multicall: '0xeefba1e63905ef1d7acba5a8513c70307c1ce441',
+balancerHelpers: '0x5aDDCCa35b7A0D07C74063c48700C8590E87864E',
+balancerMinterAddress: '0x239e55F427D44C3cc793f49bFB507ebe76638a2b',
+lidoRelayer: '0xdcdbf71A870cc60C6F9B621E28a7D3Ffd6Dd4965',
+relayer: '0xfeA793Aa415061C483D2390414275AD314B3F621',
+gaugeController: '0xc128468b7ce63ea702c1f104d55a2566b13d3abd',
+feeDistributor: '0xD3cf852898b21fc233251427c2DC93d3d604F3BB',
+protocolFeePercentagesProvider:
+'0x97207B095e4D5C9a6e4cfbfcd2C3358E03B90c4A',
+veBal: '0xC128a9954e6c874eA3d62ce62B468bA073093F25',
+veBalProxy: '0x6f5a2eE11E7a772AeB5114A20d0D7c0ff61EB8A0',
+weightedPoolFactory: '0x897888115ada5773e02aa29f775430bfb5f34c51',
+composableStablePoolFactory:
+'0xfADa0f4547AB2de89D1304A668C39B3E09Aa7c76',
+erc4626LinearPoolFactory: '0x813ee7a840ce909e7fea2117a44a90b8063bd4fd',
+aaveLinearPoolFactory: '0x0b576c1245f479506e7c8bbc4db4db07c1cd31f9',
+eulerLinearPoolFactory: '0x5f43fba61f63fa6bff101a0a0458cea917f6b347',
+gearboxLinearPoolFactory: '0x39a79eb449fc05c92c39aa6f0e9bfac03be8de5b',
+yearnLinearPoolFactory: '0x5f5222ffa40f2aed6380d022184d6ea67c776ee0',
+},
+
+yarn example ./examples/data/token-prices.ts
+yarn example ./examples/pools/spot-price.ts
+
+https://github.com/balancer/balancer-sdk/blob/develop/balancer-js/README.md
