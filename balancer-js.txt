@@ -25,3 +25,12 @@ yarn example ./examples/data/token-prices.ts
 yarn example ./examples/pools/spot-price.ts
 
 https://github.com/balancer/balancer-sdk/blob/develop/balancer-js/README.md
+
+https://github.com/Uniswap/v4-core
+
+If you look into the getSpotPrice function the function getSpotPriceAfterSwapForPath is being called with a value of $0 to find the best path to swap, so it's finding the best path regardless of liquidity levels. You can also see on the Balancer website if you swap 0.001 ETH it gives you 2DAI, which is an ETH price of $2000, much about the market rate. But that swap will cost ~$5 - $10 at current gas levels and so isn't worth it for an arbitrager.
+
+
+balancer-sor (Smart Order Router)
+If you call that function getSpotPriceAfterSwapForPath with the value you wish to swap it should give the same price as the Balancer UI. You can also use the API to find a SOR path for your swap, see: https://docs.balancer.fi/guides/API/usage.html, this will give the same results as the frontend.
+npm test ./test/testScripts/swapExample.ts
