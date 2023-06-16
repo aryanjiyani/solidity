@@ -359,4 +359,12 @@ function pow(uint256 x, uint256 y) internal pure returns (uint256) {
 
         return uint256(exp(logx_times_y));
     }
-    
+
+
+
+
+If you call that function getSpotPriceAfterSwapForPath with the value you wish to swap it should give the same price as the Balancer UI. You can also use the API to find a SOR path for your swap, see: https://docs.balancer.fi/guides/API/usage.html, this will give the same results as the frontend.
+npm test ./test/testScripts/swapExample.ts
+
+ @balancer-labs/sor@4.1.1-beta.11 test
+ TS_NODE_PROJECT='tsconfig.testing.json' nyc mocha -r ts-node/register test/*.spec.ts --timeout 20000 ./test/testScripts/swapExample.ts
