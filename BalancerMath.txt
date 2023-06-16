@@ -368,3 +368,24 @@ npm test ./test/testScripts/swapExample.ts
 
  @balancer-labs/sor@4.1.1-beta.11 test
  TS_NODE_PROJECT='tsconfig.testing.json' nyc mocha -r ts-node/register test/*.spec.ts --timeout 20000 ./test/testScripts/swapExample.ts
+
+
+balancer-js/src/modules/pools/pool-types/concerns/linear/spotPrice.concern.ts
+
+._spotPriceAfterSwapExactTokenInForTokenOut(poolPairData, ZERO)
+
+
+
+export class LinearPoolSpotPrice implements SpotPriceConcern {
+calcPoolSpotPrice(tokenIn: string, tokenOut: string, pool: Pool): string {
+const linearPool = LinearPool.fromPool(pool as SubgraphPoolBase);
+const poolPairData = linearPool.parsePoolPairData(tokenIn, tokenOut);
+return linearPool
+._spotPriceAfterSwapExactTokenInForTokenOut(poolPairData, ZERO)
+.toString();
+}
+}
+
+
+src --> module --> pools --> pool-types --> concerns --> (any folder) --> spotPrice.concern.ts (code) & spotPrice.spec.ts (testing of code)
+import pools_14717479 from '@/test/lib/pools_14717479.json'; --- [Pools details]
