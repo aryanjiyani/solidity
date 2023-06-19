@@ -389,3 +389,17 @@ return linearPool
 
 src --> module --> pools --> pool-types --> concerns --> (any folder) --> spotPrice.concern.ts (code) & spotPrice.spec.ts (testing of code)
 import pools_14717479 from '@/test/lib/pools_14717479.json'; --- [Pools details]
+
+https://github.com/balancer/balancer-api/blob/master/pools-api-diagram.png
+
+https://etherscan.io/address/0x32296969ef14eb0c6d29669c550d4a0449130230
+
+https://explorer.phalcon.xyz/tx/eth/0xeb87ebc0a18aca7d2a9ffcabf61aa69c9e8d3c6efade9e2303f8857717fb9eb7
+
+https://sepolia.etherscan.io/address/0x3fc91a3afd70395cd496c647d5a6cc9d4b2b7fad
+https://sepolia.etherscan.io/address/0x287b0e934ed0439e2a7b1d5f0fc25ea2c24b64f7#code
+
+Private A: https://etherscan.io/address/0x32b418334f3c82083d6c04bd87174fe3924e1f14
+Private B: https://etherscan.io/address/0x40921e005b411304e2683a05fe4a34a654df5dc1
+Public Sale: https://etherscan.io/address/0xeb9dfb2bf2a4081601bcedc8f68ee23d3f343887
+Seed: https://etherscan.io/address/0x2f469ab5f5afe87905a6dacd8fde74541a748cdd
