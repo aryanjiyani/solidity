@@ -1,0 +1,5 @@
+1inch Factory = https://etherscan.io/address/0xbaf9a5d4b0052359326a6cdab54babaa3a3a9643
+Mooniswap pool = https://etherscan.io/address/0xa60A4ff8CF89D5E3d87B62ef68b3801685F22f41#code
+
+Pool --> read contract --> getReturn
+Maveric = https://etherscan.io/address/0xbbf1ee38152e9d8e3470dc47947eaa65dca94913#code
