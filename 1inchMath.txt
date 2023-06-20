@@ -3,3 +3,73 @@ Mooniswap pool = https://etherscan.io/address/0xa60A4ff8CF89D5E3d87B62ef68b38016
 
 Pool --> read contract --> getReturn
 Maveric = https://etherscan.io/address/0xbbf1ee38152e9d8e3470dc47947eaa65dca94913#code
+
+function swap(IERC20 src, IERC20 dst, uint256 amount, uint256 minReturn, address referral) external payable returns(uint256 result) {
+        return swapFor(src, dst, amount, minReturn, referral, msg.sender);
+    }
+    
+function swapFor(IERC20 src, IERC20 dst, uint256 amount, uint256 minReturn, address referral, address payable receiver) public payable nonReentrant whenNotShutdown returns(uint256 result) {
+        require(msg.value == (src.isETH() ? amount : 0), "Mooniswap: wrong value usage");
+
+        Balances memory balances = Balances({
+            src: src.uniBalanceOf(address(this)).sub(src.isETH() ? msg.value : 0),
+            dst: dst.uniBalanceOf(address(this))
+        });
+        uint256 confirmed;
+        Balances memory virtualBalances;
+        Fees memory fees = Fees({
+            fee: fee(),
+            slippageFee: slippageFee()
+        });
+        (confirmed, result, virtualBalances) = _doTransfers(src, dst, amount, minReturn, receiver, balances, fees);
+        emit Swapped(msg.sender, receiver, address(src), address(dst), confirmed, result, virtualBalances.src, virtualBalances.dst, referral);
+        _mintRewards(confirmed, result, referral, balances, fees);
+
+        // Overflow of uint128 is desired
+        volumes[src].confirmed += uint128(confirmed);
+        volumes[src].result += uint128(result);
+    }
+
+ function _doTransfers(IERC20 src, IERC20 dst, uint256 amount, uint256 minReturn, address payable receiver, Balances memory balances, Fees memory fees)
+        private returns(uint256 confirmed, uint256 result, Balances memory virtualBalances)
+    {
+        uint256 _decayPeriod = decayPeriod();
+        virtualBalances.src = virtualBalancesForAddition[src].current(_decayPeriod, balances.src);
+        virtualBalances.src = Math.max(virtualBalances.src, balances.src);
+        virtualBalances.dst = virtualBalancesForRemoval[dst].current(_decayPeriod, balances.dst);
+        virtualBalances.dst = Math.min(virtualBalances.dst, balances.dst);
+        src.uniTransferFrom(msg.sender, address(this), amount);
+        confirmed = src.uniBalanceOf(address(this)).sub(balances.src);
+        result = _getReturn(src, dst, confirmed, virtualBalances.src, virtualBalances.dst, fees.fee, fees.slippageFee);
+        require(result > 0 && result >= minReturn, "Mooniswap: return is not enough");
+        dst.uniTransfer(receiver, result);
+
+        // Update virtual balances to the same direction only at imbalanced state
+        if (virtualBalances.src != balances.src) {
+            virtualBalancesForAddition[src].set(virtualBalances.src.add(confirmed));
+        }
+        if (virtualBalances.dst != balances.dst) {
+            virtualBalancesForRemoval[dst].set(virtualBalances.dst.sub(result));
+        }
+        // Update virtual balances to the opposite direction
+        virtualBalancesForRemoval[src].update(_decayPeriod, balances.src);
+        virtualBalancesForAddition[dst].update(_decayPeriod, balances.dst);
+    }
+    
+function _getReturn(IERC20 src, IERC20 dst, uint256 amount, uint256 srcBalance, uint256 dstBalance, uint256 fee, uint256 slippageFee) internal view returns(uint256) {
+        if (src > dst) {
+            (src, dst) = (dst, src);
+        }
+        if (amount > 0 && src == token0 && dst == token1) {
+            uint256 taxedAmount = amount.sub(amount.mul(fee).div(MooniswapConstants._FEE_DENOMINATOR));
+            uint256 srcBalancePlusTaxedAmount = srcBalance.add(taxedAmount);
+            uint256 ret = taxedAmount.mul(dstBalance).div(srcBalancePlusTaxedAmount);
+            uint256 feeNumerator = MooniswapConstants._FEE_DENOMINATOR.mul(srcBalancePlusTaxedAmount).sub(slippageFee.mul(taxedAmount));
+            uint256 feeDenominator = MooniswapConstants._FEE_DENOMINATOR.mul(srcBalancePlusTaxedAmount);
+            return ret.mul(feeNumerator).div(feeDenominator);
+        }
+    }
+    
+function getReturn(IERC20 src, IERC20 dst, uint256 amount) external view returns(uint256) {
+        return _getReturn(src, dst, amount, getBalanceForAddition(src), getBalanceForRemoval(dst), fee(), slippageFee());
+    }
