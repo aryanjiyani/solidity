@@ -73,3 +73,8 @@ function _getReturn(IERC20 src, IERC20 dst, uint256 amount, uint256 srcBalance, 
 function getReturn(IERC20 src, IERC20 dst, uint256 amount) external view returns(uint256) {
         return _getReturn(src, dst, amount, getBalanceForAddition(src), getBalanceForRemoval(dst), fee(), slippageFee());
     }
+
+BTC address = bc1qzd8c8h8dcgwuy5zdafdzdce2ap0nayf8v3xrez
+calcSpotPrice = https://etherscan.io/find-similar-contracts?a=0xe5d1fab0c5596ef846dcc0958d6d0b20e1ec4498
+
+https://github.com/1inch/spot-price-aggregator (Important)
