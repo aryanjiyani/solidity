@@ -79,3 +79,7 @@ calcSpotPrice = https://etherscan.io/find-similar-contracts?a=0xe5d1fab0c5596ef8
 
 https://github.com/1inch/spot-price-aggregator (Important)
 jump trading = https://etherscan.io/address/0xf584f8728b874a6a5c7a8d4d387c9aae9172d621
+
+Bitstamp: Deployer = 0x538d72dEd42A76A30f730292Da939e0577f22F57
+Wormhole Network Exploiter = https://etherscan.io/address/0x629e7da20197a5429d30da36e77d06cdf796b71a
+
